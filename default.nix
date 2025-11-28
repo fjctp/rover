@@ -14,13 +14,17 @@ let
       ms-vscode.cpptools-extension-pack
     ];
   };
+
+  python_ext = pkgs.python312.withPackages (python-pkgs: [
+    python-pkgs.bleak
+  ]);
 in
 pkgs.mkShellNoCC {
   name = "dev";
   packages = with pkgs; [
     platformio
     vscode_ext
-    python312
+    python_ext
   ];
 
 }
