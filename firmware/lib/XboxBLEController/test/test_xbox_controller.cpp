@@ -192,7 +192,7 @@ void setup() {
     
     Serial.println("Scanning for Xbox controllers...");
     
-    // Scan and connect to strongest controller
+    // Scan and connect to first controller found
     if (xbox.scanAndConnect(10000)) { // 10 second scan
         Serial.println("Connected to Xbox controller!");
     } else {

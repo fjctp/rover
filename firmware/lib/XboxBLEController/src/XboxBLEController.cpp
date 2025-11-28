@@ -24,50 +24,19 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
         return false;
     }
 
-    // Structure to store best candidate
-    struct Candidate {
-        String address;
-        int rssi;
-        bool found;
-    } best = {"", -999, false};
-
     // Start scanning
     BLE.scan();
     
     uint32_t startTime = millis();
     
-    // Scan for specified time
+    // Scan for first Xbox controller found
     while (millis() - startTime < scanTimeMs) {
         BLEDevice device = BLE.available();
         
         if (device) {
             // Check if this is an Xbox controller
             if (isXboxController(device)) {
-                int rssi = device.rssi();
-                
-                // Keep track of strongest signal
-                if (!best.found || rssi > best.rssi) {
-                    best.address = device.address();
-                    best.rssi = rssi;
-                    best.found = true;
-                }
-            }
-        }
-        delay(10);
-    }
-    
-    BLE.stopScan();
-    
-    // If we found at least one Xbox controller, connect to the best one
-    if (best.found) {
-        // Scan again to get the device reference
-        BLE.scan();
-        uint32_t connectStartTime = millis();
-        
-        while (millis() - connectStartTime < 5000) {
-            BLEDevice device = BLE.available();
-            
-            if (device && device.address() == best.address) {
+                // Found an Xbox controller - stop scanning and connect immediately
                 BLE.stopScan();
                 
                 // Attempt to connect
@@ -92,13 +61,16 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
                     // If we got here, connection succeeded but service discovery failed
                     peripheral.disconnect();
                 }
-                return false;
+                
+                // Connection failed, continue scanning for another controller
+                BLE.scan();
             }
         }
         
-        BLE.stopScan();
+        delay(10);
     }
     
+    BLE.stopScan();
     return false;
 }
 
