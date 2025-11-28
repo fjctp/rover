@@ -1,6 +1,7 @@
+// XboxBLEController.cpp
 #include "XboxBLEController.h"
 
-XboxBLEController::XboxBLEController() : initialized(false), inputReportHandle(0) {
+XboxBLEController::XboxBLEController() : initialized(false) {
     resetState();
 }
 
@@ -85,37 +86,23 @@ bool XboxBLEController::findInputReportCharacteristic() {
     // Get all characteristics in the HID service
     int charCount = hidService.characteristicCount();
     
-    // Look for HID Report characteristics
-    // The input report is typically the one with NOTIFY property
-    // and is usually the first or has the lowest handle
-    BLECharacteristic bestCandidate;
-    uint16_t lowestHandle = 0xFFFF;
-    bool foundCandidate = false;
+    // Look for HID Report characteristics with NOTIFY property
+    // The input report is the one with NOTIFY capability
+    // Note: CurieBLE doesn't expose handles, so we iterate and take the first
+    // notifiable HID Report characteristic (which is typically the input report)
     
     for (int i = 0; i < charCount; i++) {
         BLECharacteristic characteristic = hidService.characteristic(i);
         
         // Check if this is a HID Report characteristic (UUID 0x2A4D)
         if (characteristic.uuid() == XBOX_REPORT_UUID) {
-            // Input reports typically have NOTIFY property
+            // Input reports have NOTIFY property
             if (characteristic.canNotify()) {
-                // Prefer the characteristic with the lowest handle
-                // (input reports are usually declared first)
-                uint16_t handle = characteristic.handle();
-                
-                if (handle < lowestHandle) {
-                    lowestHandle = handle;
-                    bestCandidate = characteristic;
-                    foundCandidate = true;
-                }
+                // Found the input report characteristic
+                reportCharacteristic = characteristic;
+                return true;
             }
         }
-    }
-    
-    if (foundCandidate) {
-        reportCharacteristic = bestCandidate;
-        inputReportHandle = lowestHandle;
-        return true;
     }
     
     return false;

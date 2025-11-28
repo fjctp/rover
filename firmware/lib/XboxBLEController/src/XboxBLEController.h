@@ -1,3 +1,4 @@
+// XboxBLEController.h
 #ifndef XBOX_BLE_CONTROLLER_H
 #define XBOX_BLE_CONTROLLER_H
 
@@ -7,9 +8,9 @@
 #define XBOX_SERVICE_UUID "00001812-0000-1000-8000-00805f9b34fb" // HID Service
 #define XBOX_REPORT_UUID "00002a4d-0000-1000-8000-00805f9b34fb"  // HID Report (Handle 29)
 
-// Note: Multiple HID Report characteristics exist with the same UUID.
-// We must identify them by handle, not UUID. The input report handle
-// will be discovered during connection.
+// Note: Multiple HID Report characteristics may exist with the same UUID.
+// We identify the input report by looking for the first one with NOTIFY property.
+// This works because input reports always support notifications in the HID profile.
 
 class XboxBLEController {
 public:
@@ -57,7 +58,6 @@ private:
     BLECharacteristic reportCharacteristic;
     ControllerState state;
     bool initialized;
-    uint16_t inputReportHandle;  // Store the handle of the input report
 
     // Helper functions
     bool isXboxController(BLEDevice& device);
