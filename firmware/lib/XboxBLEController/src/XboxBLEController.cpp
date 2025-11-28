@@ -1,7 +1,6 @@
-// XboxBLEController.cpp
 #include "XboxBLEController.h"
 
-XboxBLEController::XboxBLEController() : initialized(false) {
+XboxBLEController::XboxBLEController() : initialized(false), inputReportHandle(0) {
     resetState();
 }
 
@@ -26,7 +25,7 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
     }
 
     // Structure to store best candidate
-    const struct Candidate {
+    struct Candidate {
         String address;
         int rssi;
         bool found;
@@ -35,11 +34,11 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
     // Start scanning
     BLE.scan();
     
-    const uint32_t startTime = millis();
+    uint32_t startTime = millis();
     
     // Scan for specified time
     while (millis() - startTime < scanTimeMs) {
-        const BLEDevice device = BLE.available();
+        BLEDevice device = BLE.available();
         
         if (device) {
             // Check if this is an Xbox controller
@@ -77,22 +76,16 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
                     
                     // Discover attributes
                     if (peripheral.discoverAttributes()) {
-                        // Find the HID report characteristic
-                        BLEService hidService = peripheral.service(XBOX_SERVICE_UUID);
-                        
-                        if (hidService) {
-                            reportCharacteristic = hidService.characteristic(XBOX_REPORT_UUID);
-                            
-                            if (reportCharacteristic) {
-                                // Subscribe to notifications
-                                if (reportCharacteristic.canNotify()) {
-                                    reportCharacteristic.subscribe();
-                                }
-                                
-                                state.connected = true;
-                                state.lastUpdateTime = millis();
-                                return true;
+                        // Find the correct HID report characteristic for input
+                        if (findInputReportCharacteristic()) {
+                            // Subscribe to notifications using the handle
+                            if (reportCharacteristic.canNotify()) {
+                                reportCharacteristic.subscribe();
                             }
+                            
+                            state.connected = true;
+                            state.lastUpdateTime = millis();
+                            return true;
                         }
                     }
                     
@@ -104,6 +97,53 @@ bool XboxBLEController::scanAndConnect(uint32_t scanTimeMs) {
         }
         
         BLE.stopScan();
+    }
+    
+    return false;
+}
+
+bool XboxBLEController::findInputReportCharacteristic() {
+    // Find the HID service
+    BLEService hidService = peripheral.service(XBOX_SERVICE_UUID);
+    
+    if (!hidService) {
+        return false;
+    }
+    
+    // Get all characteristics in the HID service
+    int charCount = hidService.characteristicCount();
+    
+    // Look for HID Report characteristics
+    // The input report is typically the one with NOTIFY property
+    // and is usually the first or has the lowest handle
+    BLECharacteristic bestCandidate;
+    uint16_t lowestHandle = 0xFFFF;
+    bool foundCandidate = false;
+    
+    for (int i = 0; i < charCount; i++) {
+        BLECharacteristic characteristic = hidService.characteristic(i);
+        
+        // Check if this is a HID Report characteristic (UUID 0x2A4D)
+        if (characteristic.uuid() == XBOX_REPORT_UUID) {
+            // Input reports typically have NOTIFY property
+            if (characteristic.canNotify()) {
+                // Prefer the characteristic with the lowest handle
+                // (input reports are usually declared first)
+                uint16_t handle = characteristic.handle();
+                
+                if (handle < lowestHandle) {
+                    lowestHandle = handle;
+                    bestCandidate = characteristic;
+                    foundCandidate = true;
+                }
+            }
+        }
+    }
+    
+    if (foundCandidate) {
+        reportCharacteristic = bestCandidate;
+        inputReportHandle = lowestHandle;
+        return true;
     }
     
     return false;
@@ -154,7 +194,8 @@ float XboxBLEController::getRightTriggerNormalized() const {
 bool XboxBLEController::isXboxController(BLEDevice& device) {
     // Check for Xbox controller by local name
     if (device.hasLocalName()) {
-        const String name = device.localName().toLowerCase();
+        String name = device.localName();
+        name.toLowerCase();
         
         if (name.indexOf("xbox") >= 0 || 
             name.indexOf("controller") >= 0) {

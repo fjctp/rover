@@ -1,4 +1,3 @@
-// test/test_xbox_controller.cpp
 #include <unity.h>
 #include "XboxBLEController.h"
 
