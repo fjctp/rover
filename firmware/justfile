@@ -1,0 +1,8 @@
+build:
+  platformio run
+
+upload:
+  sudo platformio run -t upload
+
+monitor:
+  sudo platformio device monitor
