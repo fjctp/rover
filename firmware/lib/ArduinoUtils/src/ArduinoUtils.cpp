@@ -28,6 +28,7 @@ void log(const LogLevel level, const char *msg)
   if (!log_ready) {
     Serial.begin(BAND_RATE);
     while (!Serial);
+    log_ready = true;
   }
 
   if (level > DEBUG_LEVEL)
