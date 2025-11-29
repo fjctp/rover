@@ -1,8 +1,8 @@
 build:
-  platformio run
+  platformio run -e esp32dev
 
 upload:
-  sudo platformio run -t upload
+  platformio run -t upload
 
 monitor:
-  sudo platformio device monitor
+  platformio device monitor

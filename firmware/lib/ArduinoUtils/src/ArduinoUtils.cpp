@@ -2,9 +2,11 @@
 
 #include <Arduino.h>
 
-void log(const char* msg)
+void log(const char* level, const char* msg)
 {
-  Serial.print(msg);
+  char combined[255];
+  sprintf(combined, "[%s] %s", level, msg);
+  Serial.print(combined);
 }
 
 void sleep_forever(void)
