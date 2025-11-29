@@ -23,6 +23,8 @@ pkgs.mkShellNoCC {
   name = "dev";
   packages = with pkgs; [
     platformio
+    gcc
+    
     vscode_ext
     python_ext
   ];

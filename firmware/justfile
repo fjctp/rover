@@ -2,7 +2,7 @@ build:
   platformio run -e esp32dev
 
 upload:
-  platformio run -t upload
+  platformio run -e esp32dev -t upload
 
 monitor:
   platformio device monitor
