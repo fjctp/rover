@@ -3,37 +3,41 @@
 #include "ArduinoUtils.h"
 #include "XboxBLEController.h"
 
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL -1
+#endif
+
+#ifndef BAND_RATE
+#define BAND_RATE 115200
+#endif
+
+
 const uint8_t MAIN_LOOP_HZ = 50;
 const float MAIN_LOOP_MS = 1.0f / MAIN_LOOP_HZ * 1.0e3;
-const uint32_t BAND_RATE = 115200;
 const uint32_t BLE_SCAN_MS = 3 * 1e3;
 
 XboxBLEController xbox;
 
 void setup()
 {
-  Serial.begin(BAND_RATE);
-  while (!Serial);
-
-  Serial.println("Xbox BLE Controller - Robot Rover Control");
-  Serial.println("=========================================");
+  log(LogLevel::INFO, "Started");
 
   // Initialize BLE
   if (!xbox.begin())
   {
-    Serial.println("Failed to initialize BLE!");
+    log(LogLevel::ERROR, "Failed to initialize BLE!");
     sleep_forever();
   }
 
   // Scan and connect to first controller found
   if (xbox.scanAndConnect(BLE_SCAN_MS))
   {
-    Serial.println("Connected to Xbox controller!");
+    log(LogLevel::INFO, "Connected to Xbox controller!");
   }
   else
   {
-    Serial.println("No Xbox controller found. Make sure it's in pairing mode.");
-    Serial.println("Press and hold the pairing button on the controller.");
+    log(LogLevel::ERROR, "No Xbox controller found. Make sure it's in pairing mode.");
+    log(LogLevel::ERROR, "Press and hold the pairing button on the controller.");
     sleep_forever();
   }
 }
@@ -66,25 +70,16 @@ void loop()
       float throttle = rightTrigger - leftTrigger;
       leftMotor *= abs(throttle);
       rightMotor *= abs(throttle);
-
-      Serial.print("Left: ");
-      Serial.print(leftMotor, 2);
-      Serial.print(" | Right: ");
-      Serial.print(rightMotor, 2);
-      Serial.print(" | LT: ");
-      Serial.print(leftTrigger, 2);
-      Serial.print(" | RT: ");
-      Serial.println(rightTrigger, 2);
     }
   }
   else
   {
-    Serial.println("Controller disconnected!");
+    log(LogLevel::INFO, "Controller disconnected!");
     delay(1000);
 
     // Try to reconnect
-    Serial.println("Attempting to reconnect...");
-    xbox.scanAndConnect(5000);
+    log(LogLevel::INFO, "Attempting to reconnect...");
+    xbox.scanAndConnect(BLE_SCAN_MS);
   }
 
   delay(MAIN_LOOP_MS);

@@ -1,12 +1,42 @@
 #include "ArduinoUtils.h"
-
 #include <Arduino.h>
 
-void log(const char* level, const char* msg)
+bool log_ready = false;
+
+const char *getLogLevelName(const LogLevel level)
 {
+  switch (level)
+  {
+  case LogLevel::ERROR:
+    return "ERROR";
+  case LogLevel::WARN:
+    return "WARN";
+  case LogLevel::INFO:
+    return "INFO";
+  case LogLevel::DEBUG:
+    return "DEBUG";
+  case LogLevel::VERBOSE:
+    return "VERBOSE";
+  default:
+    return "INFO";
+  }
+}
+
+void log(const LogLevel level, const char *msg)
+{
+#if DEBUG_LEVEL > -1
+  if (!log_ready) {
+    Serial.begin(BAND_RATE);
+    while (!Serial);
+  }
+
+  if (level > DEBUG_LEVEL)
+    return;
   char combined[255];
-  sprintf(combined, "[%s] %s", level, msg);
+  sprintf(combined, "[%s] %s\n",
+          getLogLevelName(level), msg);
   Serial.print(combined);
+#endif
 }
 
 void sleep_forever(void)
